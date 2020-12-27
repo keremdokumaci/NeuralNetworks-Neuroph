@@ -45,17 +45,9 @@ public class Program {
 					
 					nn = new NN(hiddenLayerNeuronSize,learningRate,threshold,epoch).useMomentum(momentum);
 					nn.CreateDataset();
-					nn.TrainNeuralNetwork();
-					System.out.println("Test için 3 adet deðer girin.");
-					System.out.println("1. deðer -> ");
-					double x = in.nextDouble();
-					System.out.println("2. deðer -> ");
-					double y = in.nextDouble();
-					System.out.println("3. deðer -> ");
-					double z = in.nextDouble();
-					
-					double[] result = nn.TestNeuralNetwork(x, y, z);
-					System.out.println("Test sonucu -> " + result[0]);
+					nn.TrainNeuralNetwork();					
+					double testError = nn.GetTestError();
+					System.out.println("\n\nTest sonucu -> " + testError + "\n");
 					break;
 					
 				

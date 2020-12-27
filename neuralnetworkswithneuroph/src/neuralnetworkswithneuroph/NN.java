@@ -47,18 +47,15 @@ public class NN {
 		this.threshold = threshold;
 		this.learningRate = learningRate;
 		this.hiddenLayerNeuronSize = hiddenLayerNeuron;
-	}
-	
-	public NN useMomentum(double momentum) {
-		this.useMomentum = true;
-		
 		this.backProp = new MomentumBackpropagation();
 		
 		this.backProp.setLearningRate(this.learningRate);
-		this.backProp.setMomentum(momentum);
 		this.backProp.setMaxError(this.threshold);
 		this.backProp.setMaxIterations(this.epoch);
-		
+	}
+	
+	public NN useMomentum(double momentum) {
+		this.backProp.setMomentum(momentum);
 		return this;
 	}
 	
@@ -121,18 +118,38 @@ public class NN {
 	public void TrainNeuralNetwork()
 	{
 		this.multiLayerPerceptron = new MultiLayerPerceptron(TransferFunctionType.SIGMOID,3,this.hiddenLayerNeuronSize,1);
-		
-		if(this.useMomentum)
-			this.multiLayerPerceptron.setLearningRule(this.backProp);
-		
+		this.multiLayerPerceptron.setLearningRule(this.backProp);
 		this.multiLayerPerceptron.learn(this.trainDataset);
 		this.multiLayerPerceptron.save("trained_network.nnet");
 		
 		System.out.println("Training is done !");
 	}
+	public double GetTrainingError()
+	{
+		return this.backProp.getTotalNetworkError();
+	}
 	
+	private double MSE(double predicted, double target)
+	{
+		return Math.pow((predicted - target), 2);
+	}
+	
+	public double GetTestError() 
+	{
+		NeuralNetwork nn = NeuralNetwork.createFromFile("trained_network.nnet");
+		double totalError = 0;
+
+		for(DataSetRow row : this.testDataset.getRows()) {
+			nn.setInput(row.getInput());
+			nn.calculate();
+			totalError += MSE(nn.getOutput()[0],row.getDesiredOutput()[0]);
+		}
+		
+		return totalError/this.testDataset.size();
+	}
 	public double[] TestNeuralNetwork(double x, double y, double z) {
 		NeuralNetwork nn = NeuralNetwork.createFromFile("trained_network.nnet");
+
 		nn.setInput(x,y,z);
 		nn.calculate();
 		return nn.getOutput();
