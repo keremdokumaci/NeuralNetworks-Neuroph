@@ -43,11 +43,12 @@ public class Program {
 					else
 						nn = new NN(hiddenLayerNeuronSize,learningRate,threshold,epoch);
 					
-					nn = new NN(hiddenLayerNeuronSize,learningRate,threshold,epoch).useMomentum(momentum);
+
 					nn.CreateDataset();
-					nn.TrainNeuralNetwork();					
+					nn.TrainNeuralNetwork();			
+					System.out.println("\nEðitim veri seti üzerinde hata sonucu -> "+nn.GetTrainingError());
 					double testError = nn.GetTestError();
-					System.out.println("\n\nTest sonucu -> " + testError + "\n");
+					System.out.println("\nTest veri seti hata sonucu -> " + testError + "\n");
 					break;
 					
 				

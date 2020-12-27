@@ -61,13 +61,20 @@ public class NN {
 	
 	public void CreateDataset() throws FileNotFoundException {
 		Scanner file = new Scanner(this.datasetFile);
-		dataset = new DataSet(3,1);
-		while(file.hasNextDouble()) {
+				
+		dataset = new DataSet(3,3);
+		while(file.hasNext()) {
 			double[] inputs = new double[3];
+			double[] outputs = new double[3];
+			
 			for(int i = 0; i<3; i++) {
-				inputs[i] = file.nextDouble();
+				inputs[i] = Double.parseDouble(file.next());
 			}
-			dataset.add(new DataSetRow(inputs,new double[] {file.nextDouble()}));
+			for(int i = 0; i<3; i++) {
+				outputs[i] = Double.parseDouble(file.next());
+			}
+			
+			dataset.add(new DataSetRow(inputs,outputs));
 		}
 		file.close();
 		
@@ -99,8 +106,8 @@ public class NN {
 			}
 		}
 		
-		DataSet test = new DataSet(3,1);
-		DataSet train = new DataSet(3,1);
+		DataSet test = new DataSet(3,3);
+		DataSet train = new DataSet(3,3);
 		
 		
 		for(int i = 0; i<1000; i++) {
@@ -117,7 +124,7 @@ public class NN {
 	
 	public void TrainNeuralNetwork()
 	{
-		this.multiLayerPerceptron = new MultiLayerPerceptron(TransferFunctionType.SIGMOID,3,this.hiddenLayerNeuronSize,1);
+		this.multiLayerPerceptron = new MultiLayerPerceptron(TransferFunctionType.SIGMOID,3,this.hiddenLayerNeuronSize,3);
 		this.multiLayerPerceptron.setLearningRule(this.backProp);
 		this.multiLayerPerceptron.learn(this.trainDataset);
 		this.multiLayerPerceptron.save("trained_network.nnet");
@@ -129,20 +136,27 @@ public class NN {
 		return this.backProp.getTotalNetworkError();
 	}
 	
-	private double MSE(double predicted, double target)
+	private double MSE(double[] predicted, double[] target)
 	{
-		return Math.pow((predicted - target), 2);
+		double singleError = 0;
+		for(int i = 0;i<3;i++) {
+			singleError += Math.pow((predicted[i] - target[i]), 2);
+		}
+			
+
+		return singleError;
 	}
 	
 	public double GetTestError() 
 	{
 		NeuralNetwork nn = NeuralNetwork.createFromFile("trained_network.nnet");
+		
 		double totalError = 0;
 
 		for(DataSetRow row : this.testDataset.getRows()) {
 			nn.setInput(row.getInput());
 			nn.calculate();
-			totalError += MSE(nn.getOutput()[0],row.getDesiredOutput()[0]);
+			totalError += MSE(nn.getOutput(),row.getDesiredOutput());
 		}
 		
 		return totalError/this.testDataset.size();
