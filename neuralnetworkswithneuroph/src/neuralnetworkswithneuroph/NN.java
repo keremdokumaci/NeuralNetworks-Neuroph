@@ -10,28 +10,56 @@ import java.util.*;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
+import org.neuroph.nnet.MultiLayerPerceptron;
+import org.neuroph.nnet.learning.MomentumBackpropagation;
+import org.neuroph.util.TransferFunctionType;
 
 
 public class NN {
 	private static final File datasetFile = new File(NN.class.getResource("Dataset").getPath());
 	private double trainingSize = 0.7;
 	private double testSize = 0.3;
-	private double momentum;
 	
-	public DataSet dataset;
+	private int hiddenLayerNeuronSize;
+	private double learningRate;
+	private double threshold;
+	private int epoch;
 	
-	private NeuralNetwork neuralNetwork;
+	private DataSet dataset;
+	private DataSet trainDataset;
+	private DataSet testDataset;
+
+	private MultiLayerPerceptron multiLayerPerceptron;
+	private MomentumBackpropagation backProp;
 	
+	private boolean useMomentum = false;
+	
+	public NN() {
+		
+	}
 	public NN(int hiddenLayerNeuron,double learningRate, double threshold, int epoch) throws Exception
 	{
 		if(trainingSize > 0.9) {
 			throw new Exception("Training dataset size must be under 0.9");
 		}
 		
+		this.epoch = epoch;
+		this.threshold = threshold;
+		this.learningRate = learningRate;
+		this.hiddenLayerNeuronSize = hiddenLayerNeuron;
 	}
 	
-	public void useMomentum(double momentum) {
-		this.momentum = momentum;
+	public NN useMomentum(double momentum) {
+		this.useMomentum = true;
+		
+		this.backProp = new MomentumBackpropagation();
+		
+		this.backProp.setLearningRate(this.learningRate);
+		this.backProp.setMomentum(momentum);
+		this.backProp.setMaxError(this.threshold);
+		this.backProp.setMaxIterations(this.epoch);
+		
+		return this;
 	}
 	
 	public void CreateDataset() throws FileNotFoundException {
@@ -44,10 +72,15 @@ public class NN {
 			}
 			dataset.add(new DataSetRow(inputs,new double[] {file.nextDouble()}));
 		}
+		file.close();
+		
+		DataSet[] datasets = TrainTestSplit();
+		trainDataset = datasets[0];
+		testDataset = datasets[1];
 		
 	}
 	
-	public DataSet[] TrainTestSplit()
+	private DataSet[] TrainTestSplit()
 	{
 		List<Integer> testRowNumbers = new ArrayList<Integer>();
 		
@@ -55,7 +88,7 @@ public class NN {
 		
 		for(int i=0;i<300;i++) {
 			int rnd = random.nextInt(1000);
-			System.out.println(rnd);
+
 			if(testRowNumbers.contains(rnd) == false)
 				testRowNumbers.add(rnd);
 			else {
@@ -83,6 +116,26 @@ public class NN {
 
 		return new DataSet[] {train, test};
 		
+	}
+	
+	public void TrainNeuralNetwork()
+	{
+		this.multiLayerPerceptron = new MultiLayerPerceptron(TransferFunctionType.SIGMOID,3,this.hiddenLayerNeuronSize,1);
+		
+		if(this.useMomentum)
+			this.multiLayerPerceptron.setLearningRule(this.backProp);
+		
+		this.multiLayerPerceptron.learn(this.trainDataset);
+		this.multiLayerPerceptron.save("trained_network.nnet");
+		
+		System.out.println("Training is done !");
+	}
+	
+	public double[] TestNeuralNetwork(double x, double y, double z) {
+		NeuralNetwork nn = NeuralNetwork.createFromFile("trained_network.nnet");
+		nn.setInput(x,y,z);
+		nn.calculate();
+		return nn.getOutput();
 	}
 	
 	
